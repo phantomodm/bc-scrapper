@@ -1,9 +1,18 @@
 from bs4 import BeautifulSoup
 import itertools
 import requests
+import pyrebase
+
+fireBaseConfig = {
+    
+}
+
+# Firebase initialization
+firebase = pyrebase.initialize_app(fireBaseConfig)
+fbRef = firebase.database()
 
 page_array = [
-    'http://localhost:3000/catchers-mitt-one-color-quick-order/'
+    'http://localhost:3000/catchers-mitt-one-color-quick-order/',
     'http://localhost:3000/catchers-mitt-dual-color-quick-order/',
     'http://localhost:3000/catchers-mitt-tri-color-quick-order/',
     'http://localhost:3000/first-base-mitt-tri-color-quick-order/',
@@ -90,6 +99,11 @@ templates = {
 
 designTemplate ={}
 
+radioValue = ''
+radioName = ''
+radioId = ''
+swatchName = ''
+
 def save(obj,file,mode):
     with open(file,mode) as edit:
         edit.write(str(obj))
@@ -131,28 +145,34 @@ for page in page_array:
                 swatch = color.find_next('span', class_="form-option-variant form-option-variant--color")
                 for elm in elements:
                     if elm == section:
-                        # ordersRef = fbRef.child('bc_incoming_orders')
-                        # orderRef = ordersRef.push({
-                        #     'product_id': product_id,
-                        #     'designTemplate': design ,
-                        #     'attribute_name': radio.get_attribute_list('name')[0],
-                        #     'attribute_id': radio.get_attribute_list('id')[0],
-                        #     'attribute_value': radio.get_attribute_list('value')[0],          
-                        #     'option_color': radio.get_attribute_list('title')[0],
-                        #     'option_hex-color': radio.get_attribute_list('style')[0],
-                        #     'build':  designTemplate
-                        # })
+                        
                         obj = {}
-
+                        obj["product_id"] = product_id
+                        obj["designTemplate"] = design
                         obj["name"] = radio.get_attribute_list('name')[0]
                         obj["id"] = radio.get_attribute_list('id')[0]
                         obj["value"] = radio.get_attribute_list('value')[0]
                         obj["color"] = swatch.get_attribute_list('title')[0]
                         obj["hex"] = swatch.get_attribute_list('style')[0].split(' ')[1].strip()
+                        obj["build"] = designTemplate
 
                         objArray.append(obj)
 
+
 save(objArray,"attr.json",'a')
+for attrib in objArray:
+    print('Adding product {} to backend'.format(attrib["product_id"]))
+    profilesRef = fbRef.child('nine-positions-glove-profile/{}'.format((attrib["product_id"])))
+    profileRef = profilesRef.push({
+        'product_id': attrib["product_id"],
+        'designTemplate': attrib["designTemplate"] ,
+        'attribute_name': attrib["name"],
+        'attribute_id': attrib["id"],
+        'attribute_value': attrib["value"],          
+        'attribute_color': attrib["color"],
+        'attribute_hexColor': attrib["hex"],
+        'build':  attrib["build"]
+    })
 
 
 
